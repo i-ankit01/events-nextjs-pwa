@@ -1,26 +1,33 @@
-'use client'
+"use client";
 
-
+import { signUp } from "@/actions/auth";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function SignUp() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+  const router = useRouter();
 
-  const handleEmailSignup = async (e: React.FormEvent) => {
+  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
-      await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const formData = new FormData(e.currentTarget);
+      const result = await signUp(formData);
+
+      if (result.status == "success") {
+        router.push("/login");
+      } else {
+        console.log(result.status);
+        setError(result.status);
+      }
     } catch (err) {
       console.error(err);
+      setError("some error occured")
     } finally {
       setLoading(false);
     }
@@ -62,8 +69,7 @@ export default function SignUp() {
           type="email"
           placeholder="Email"
           className="w-full mb-4 px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-500"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          name="email"
           required
         />
 
@@ -71,11 +77,11 @@ export default function SignUp() {
           type="password"
           placeholder="Password"
           className="w-full mb-4 px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-500"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          name="password"
           required
         />
 
+        {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
         <button
           type="submit"
           disabled={loading}
@@ -83,8 +89,8 @@ export default function SignUp() {
         >
           {loading ? "Creating account..." : "Create Account"}
         </button>
-        
-      <Link href={"/login"}>Already have an account ? Login</Link>
+
+        <Link href={"/login"}>Already have an account ? Login</Link>
       </form>
     </div>
   );

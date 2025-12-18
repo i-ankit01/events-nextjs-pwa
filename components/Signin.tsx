@@ -1,22 +1,27 @@
-'use client'
+"use client";
+import { signIn } from "@/actions/auth";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function SignIn() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter()
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const formData = new FormData(e.currentTarget);
+      const result = await signIn(formData)
+
+      if(result.status == "success"){
+        router.push("/")
+      }
+      else{
+        console.log(result.status)
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -57,11 +62,10 @@ export default function SignIn() {
         </div>
 
         <input
+          name="email"
           type="email"
           placeholder="Email"
           className="w-full mb-4 px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-500"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           required
         />
 
@@ -69,8 +73,7 @@ export default function SignIn() {
           type="password"
           placeholder="Password"
           className="w-full mb-4 px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-500"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          name="password"
           required
         />
 
@@ -81,8 +84,7 @@ export default function SignIn() {
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
-      <Link href={"/register"}>Create Account</Link>
-
+        <Link href={"/register"}>Create Account</Link>
       </form>
     </div>
   );
