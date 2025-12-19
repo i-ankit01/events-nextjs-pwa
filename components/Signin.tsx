@@ -1,16 +1,18 @@
 "use client";
-import { signIn } from "@/actions/auth";
+import { signIn, signInWithGoogle } from "@/actions/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
   const router = useRouter()
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError("")
 
     try {
       const formData = new FormData(e.currentTarget);
@@ -21,17 +23,18 @@ export default function SignIn() {
       }
       else{
         console.log(result.status)
+        setError(result.status);
       }
     } catch (err) {
       console.error(err);
+      setError("some error occured")
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Replace with Firebase / NextAuth / Supabase logic
-    window.location.href = "/api/auth/google";
+  const handleGoogleLogin = async () => {
+    await signInWithGoogle()
   };
 
   return (
@@ -76,6 +79,8 @@ export default function SignIn() {
           name="password"
           required
         />
+
+        {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
 
         <button
           type="submit"

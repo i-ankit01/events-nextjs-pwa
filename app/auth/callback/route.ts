@@ -1,34 +1,63 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
 // The client you created from the Server-Side Auth instructions
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
   // if "next" is in param, use it as the redirect URL
-  let next = searchParams.get('next') ?? '/'
-  if (!next.startsWith('/')) {
+  let next = searchParams.get("next") ?? "/";
+  if (!next.startsWith("/")) {
     // if "next" is not a relative URL, use the default
-    next = '/'
+    next = "/";
   }
 
   if (code) {
-    const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const supabase = await createClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === 'development'
+
+      //for creating users_profile instance
+      const { data, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error("Error occured", userError.message);
+        redirect(`${origin}/error`);
+      }
+      const { data: existingUser } = await supabase
+        .from("users_profile")
+        .select("*")
+        .eq("email", data.user.email)
+        .limit(1)
+        .single();
+
+      if (!existingUser) {
+        const { error: insertError } = await supabase
+          .from("users_profile")
+          .insert({
+            email: data.user.email,
+            name: data.user.user_metadata.name,
+          });
+
+        if (insertError) {
+          console.error("Error occured", insertError.message);
+          redirect(`${origin}/error`)
+        }
+      }
+
+      const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
+      const isLocalEnv = process.env.NODE_ENV === "development";
       if (isLocalEnv) {
         // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`)
+        return NextResponse.redirect(`${origin}${next}`);
       } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
+        return NextResponse.redirect(`https://${forwardedHost}${next}`);
       } else {
-        return NextResponse.redirect(`${origin}${next}`)
+        return NextResponse.redirect(`${origin}${next}`);
       }
     }
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
 }
