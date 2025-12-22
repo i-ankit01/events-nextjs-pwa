@@ -3,6 +3,6 @@ export type Event = {
   name: string;
   description: string;
   image: string;
-  date: string;
+  created_at : string;
   upvotes: number;
 };
