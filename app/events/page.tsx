@@ -32,17 +32,17 @@ export default function EventsPage() {
     fetchEvents();
   }, []);
 
-  const handleUpvote = async (id: number) => {
-    try {
-      console.log("function called")
-      const {error} = await supabase.from("events").update({"upvotes" : 1}).eq("id",id)
-      if(error){
-        console.log(error)
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  };
+  // const handleUpvote = async (id: number) => {
+  //   try {
+  //     console.log("function called")
+  //     const {error} = await supabase.from("events").update({"upvotes" : 1}).eq("id",id)
+  //     if(error){
+  //       console.log(error)
+  //     }
+  //   } catch (error) {
+  //     console.log(error)
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-black-100 px-6 py-10">
@@ -80,7 +80,7 @@ export default function EventsPage() {
                 </p>
 
                 <button
-                  onClick={() => handleUpvote(event.id)}
+                  // onClick={() => handleUpvote(event.id)}
                   className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition"
                 >
                   👍 Upvote

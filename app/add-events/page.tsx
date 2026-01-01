@@ -10,18 +10,46 @@ export default function AddEventPage() {
     e.preventDefault();
     setLoading(true);
 
+    const supabase = createClient();
+
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const data = {
-      name: formData.get("name"),
-      description: formData.get("description"),
-    };
+    const imageFile = formData.get("image") as File;
+    const name = formData.get("name");
+    const description = formData.get("description");
+    let imageUrl: string | null = null;
 
     try {
-      const supabase = await createClient();
-      const { error } = await supabase.from("events").insert(data).single();
-      if (error) {
-        console.log(error);
+      
+      if (imageFile && imageFile.size > 0) {
+        const fileExt = imageFile.name.split(".").pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        // const filePath = `events/${fileName}`;
+        const filePath = fileName;
+
+        const { error: uploadError } = await supabase.storage
+          .from("events_images")
+          .upload(filePath, imageFile, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        // now get the image url from the storage
+
+        const { data } = supabase.storage // do not need await here as it just constructs the url locally
+          .from("events_images")
+          .getPublicUrl(filePath);
+        imageUrl = data.publicUrl;
+      }
+
+      const { error: insertError } = await supabase
+        .from("events")
+        .insert({ name, description, image: imageUrl })
+        .single();
+      if (insertError) {
+        console.log(insertError);
       }
     } catch (error) {
       console.log("Error occured while inserting event", error);
